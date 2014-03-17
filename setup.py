@@ -22,14 +22,18 @@ to create this egg:
 .. _dbus-python: http://dbus.freedesktop.org/releases/dbus-python/
 """
 
-CONFIG_FILE = 'config.h'
+from __future__ import print_function
 
 import os, sys
 
+
+CONFIG_FILE = 'config.h'
+
+
 # First, check that config file exists
 if not os.path.exists(CONFIG_FILE):
-    print "%s file doesn't exist in the current directory." % CONFIG_FILE
-    print "Please run ./configure before running setup.py script."
+    print("%s file doesn't exist in the current directory." % CONFIG_FILE)
+    print("Please run ./configure before running setup.py script.")
     sys.exit(1)
 
 
@@ -39,15 +43,16 @@ import re
 
 regex_version = r'#define VERSION "([0-9\.]+)"'
 version_search = re.search(regex_version, open(CONFIG_FILE).read())
+version_extra = '.post1'
 
 if version_search is None:
-    print "Can't find version pattern %r in %s file." % (regex_version,
-                                                         CONFIG_FILE)
-    print "Maybe you should re-run ./configure ?"
+    print("Can't find version pattern %r in %s file." % (regex_version,
+                                                         CONFIG_FILE))
+    print("Maybe you should re-run ./configure ?")
     sys.exit(1)
 else:
-    version = version_search.groups()[0]
-    print "Found dbus-python version %r" % version
+    version = version_search.groups()[0] + version_extra
+    print("Found dbus-python version %r" % version)
 
 
 
@@ -64,19 +69,11 @@ def get_include_flags(package):
     pkg_config = ['pkg-config', '--cflags-only-I', package]
 
     try:
-        proc = subprocess.Popen(pkg_config, close_fds=True,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-    except OSError, e:
-        print "Unable to execute pkg-config command: %s" % e
+        output = subprocess.check_output(pkg_config, close_fds=True)
+        output = output.decode('utf-8')
+    except subprocess.CalledProcessError as exc:
+        print(exc)
         sys.exit(1)
-
-    output = proc.stdout.read()
-    err = proc.stderr.read()
-
-    if err != '':
-        raise OSError('Unable to get include flags for package %r. '
-                      'pkg-config error was:\n\n%s' % (package, err))
 
     return [inc.strip()[2:]
         for inc in output.strip().split()
@@ -106,10 +103,10 @@ try:
     GLIB_INCLUDE = get_include_flags('glib-2.0')
     GLIB_LIB=['glib-2.0', 'dbus-glib-1']
 except OSError:
-    print "Compiled without glib bindings"
+    print("Compiled without glib bindings")
     pass
 else:
-    print "Compiled with glib bindings"
+    print("Compiled with glib bindings")
     packages.append('dbus.mainloop')
     glib_ext = Extension(
         '_dbus_glib_bindings', glob.glob('_dbus_glib_bindings/*.c'),
